@@ -5,6 +5,8 @@ import java.util.ArrayList;
 public class ObservablePictureImpl implements ObservablePicture {
 	private Picture p;
 	private ArrayList<ObserverRegistered> observers;
+	private ArrayList<Pixel> changedPixels;
+	private boolean isSuspended;
 
 	public ObservablePictureImpl(Picture p) {
 		this.p = p;
@@ -35,9 +37,10 @@ public class ObservablePictureImpl implements ObservablePicture {
 		this.p.setPixel(x, y, p);
 		Coordinate coord = new Coordinate(x,y);
 		for(ObserverRegistered o : observers) {
+			changedPixels.add(new ChangedPixelImpl(p,coord));
 			RegionImpl[] roi = (RegionImpl[])o.getRegions();
 			for(int i = 0; i < roi.length; i++) {
-				if(roi[i].isWithinRegion(coord)) {
+				if(roi[i].isWithinRegion(coord) && !isSuspended) {
 					o.notify();
 				}
 			}
@@ -48,9 +51,10 @@ public class ObservablePictureImpl implements ObservablePicture {
 	public void setPixel(Coordinate c, Pixel p) {
 		this.p.setPixel(c, p);
 		for(ObserverRegistered o : observers) {
+			changedPixels.add(new ChangedPixelImpl(p,c));
 			RegionImpl[] roi = (RegionImpl[])o.getRegions();
 			for(int i = 0; i < roi.length; i++) {
-				if(roi[i].isWithinRegion(c)) {
+				if(roi[i].isWithinRegion(c) && !isSuspended) {
 					o.notify();
 				}
 			}
@@ -100,15 +104,61 @@ public class ObservablePictureImpl implements ObservablePicture {
 		ROIObserver[] foundobservers = found.toArray(new ROIObserver[found.size()]);
 		return foundobservers;
 	}
-
+	
+	/*
+	 * Creates a union of all changed pixels while
+	 * the observable is suspended
+	 */
 	@Override
 	public void suspendObservable() {
-		// TODO Auto-generated method stub
+		isSuspended = true;
+		changedPixels.removeAll(changedPixels);
 	}
+	
 
+	private Coordinate findSmallest(ChangedPixel[] cp) {
+		int smx = 0;
+		int smy = 0;
+		for(int i = 0; i < cp.length; i ++) {
+			smx = cp[i].getCoordinate().getX() < smx ? cp[i].getCoordinate().getX() : smx;
+			smy = cp[i].getCoordinate().getY() < smy ? cp[i].getCoordinate().getY() : smy;			
+		}
+		Coordinate smallest = new Coordinate(smx, smy);
+		return smallest;
+	}
+	
+	private Coordinate findLargest(ChangedPixel[] cp) {
+		int lgx = 0;
+		int lgy = 0;	
+		for(int i = 0; i < cp.length; i ++) {
+			lgx = cp[i].getCoordinate().getX() > lgx ? cp[i].getCoordinate().getX() : lgx;
+			lgy = cp[i].getCoordinate().getY() > lgy ? cp[i].getCoordinate().getY() : lgy;
+		}
+		Coordinate largest = new Coordinate(lgx, lgy);
+		return largest;
+	}
+	
+	/*
+	 * Notifies the intersection of the ROI and
+	 * the union of all the changed pixels while
+	 * the observable was suspended intersection 
+	 * of the changed and the observed region
+	 */
 	@Override
 	public void resumeObservable() {
-		// TODO Auto-generated method stub
+		isSuspended = false;
+		ChangedPixel[] cpix = changedPixels.toArray(new ChangedPixel[changedPixels.size()]);
+		Region changedRegion = new RegionImpl(this.findSmallest(cpix),this.findLargest(cpix));
+		/*
+		 * Loops through the observers ArrayList of ObserverRegistered objects
+		 * and creates an array of RegionImpl objects per region, filling it with
+		 * the regions retrieved from each observer's getRegions() method. Then for
+		 * every region the observer is registered with, it needs to check for 
+		 * changed pixels and notify.
+		 */
+		for(ROIObserver o : this.findROIObservers(changedRegion)) {
+			o.notify();
+		}
 	}
 
 }
