@@ -33,12 +33,28 @@ public class ObservablePictureImpl implements ObservablePicture {
 	@Override
 	public void setPixel(int x, int y, Pixel p) {
 		this.p.setPixel(x, y, p);
-		
+		Coordinate coord = new Coordinate(x,y);
+		for(ObserverRegistered o : observers) {
+			RegionImpl[] roi = (RegionImpl[])o.getRegions();
+			for(int i = 0; i < roi.length; i++) {
+				if(roi[i].isWithinRegion(coord)) {
+					o.notify();
+				}
+			}
+		}
 	}
 
 	@Override
 	public void setPixel(Coordinate c, Pixel p) {
 		this.p.setPixel(c, p);
+		for(ObserverRegistered o : observers) {
+			RegionImpl[] roi = (RegionImpl[])o.getRegions();
+			for(int i = 0; i < roi.length; i++) {
+				if(roi[i].isWithinRegion(c)) {
+					o.notify();
+				}
+			}
+		}
 	}
 
 	@Override
@@ -69,10 +85,10 @@ public class ObservablePictureImpl implements ObservablePicture {
 
 	}
 
+	@SuppressWarnings("null")
 	@Override
 	public ROIObserver[] findROIObservers(Region r) {
 		ArrayList<ROIObserver> found = null;
-		
 		for(ObserverRegistered o : observers) {
 			Region[] matchingregions = o.getRegions();
 			for(int i = 0; i < matchingregions.length; i++) {
