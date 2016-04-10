@@ -36,6 +36,30 @@ public class RegionImpl implements Region {
 		this.top = ay < by ? ay : by;
 		this.bottom = ay < by ? by : ay;
 	}
+	
+	/*
+	 * Checks whether a coordinate object falls within 
+	 * a certain region, taking in a coordinate object as a 
+	 * parameter and returning a boolean value.
+	 */
+	public boolean isWithinRegion(Coordinate coord) {
+		boolean in = coord.getY() < bottom && coord.getY() > top 
+				|| coord.getX() < right && coord.getX() > left 
+				? true : false;
+		return in;
+	}
+	
+	/*
+	 * Checks whether a coordinate object falls within
+	 * a certain region, taking in a coordinate object and
+	 * a region object as parameters and returning a boolean value.
+	 */
+	public boolean isWithinRegion(Coordinate coord, Region reg) {
+		boolean in = coord.getY() < reg.getBottom() && coord.getY() > reg.getTop() 
+				|| coord.getX() < reg.getRight() && coord.getX() > reg.getLeft()
+				? true : false;
+		return in;
+	}
 
 	@Override
 	public Coordinate getUpperLeft() {
@@ -108,6 +132,7 @@ public class RegionImpl implements Region {
 		intersected = new RegionImpl(topleftcorner, bottomrightcorner);
 		return intersected;
 	}
+
 
 	/*
 	 * Should return a region object that is the smallest
