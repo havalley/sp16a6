@@ -50,11 +50,27 @@ public class ObservablePictureImpl implements ObservablePicture {
 	@Override
 	public void setPixel(Coordinate c, Pixel p) {
 		this.p.setPixel(c, p);
+		/*
+		 * loops through the list of observers registered
+		 * with particular regions
+		 */
 		for(ObserverRegistered o : observers) {
+			/*
+			 * creates a new instance of a ChangedPixel that
+			 * stores references to individual pixel and coordinate objects
+			 */
 			changedPixels.add(new ChangedPixelImpl(p,c));
-			RegionImpl[] roi = (RegionImpl[])o.getRegions();
-			for(int i = 0; i < roi.length; i++) {
-				if(roi[i].isWithinRegion(c) && !isSuspended) {
+			/*
+			 * an arraylist of each observer's regions
+			 */
+			ArrayList<Region> roi = o.getRegionsAL();
+			/*
+			 * iterates through the collection of regions associated with each
+			 * registered observer object and notifies the observers if pixels 
+			 * have changed within the region
+			 */
+			for(Region r : roi) {
+				if(((RegionImpl) r).isWithinRegion(c) && !isSuspended) {
 					o.notify();
 				}
 			}
@@ -73,13 +89,13 @@ public class ObservablePictureImpl implements ObservablePicture {
 
 	@Override
 	public void registerROIObserver(ROIObserver observer, Region r) {
-		observers.add(new ObserverRegisteredImpl(observer, r));
+		observers.add(new ObserverRegisteredImpl((ROIObserver)observer, r));
 	}
 
 	@Override
 	public void unregisterROIObservers(Region r) {
 		for(ROIObserver o : this.findROIObservers(r)) {
-		observers.remove(o);
+			observers.remove(o);
 		}
 	}
 
@@ -104,7 +120,7 @@ public class ObservablePictureImpl implements ObservablePicture {
 		ROIObserver[] foundobservers = found.toArray(new ROIObserver[found.size()]);
 		return foundobservers;
 	}
-	
+
 	/*
 	 * Creates a union of all changed pixels while
 	 * the observable is suspended
@@ -114,8 +130,10 @@ public class ObservablePictureImpl implements ObservablePicture {
 		isSuspended = true;
 		changedPixels.removeAll(changedPixels);
 	}
-	
 
+	/*
+	 * helper methods for 
+	 */
 	private Coordinate findSmallest(ChangedPixel[] cp) {
 		int smx = 0;
 		int smy = 0;
@@ -126,7 +144,7 @@ public class ObservablePictureImpl implements ObservablePicture {
 		Coordinate smallest = new Coordinate(smx, smy);
 		return smallest;
 	}
-	
+
 	private Coordinate findLargest(ChangedPixel[] cp) {
 		int lgx = 0;
 		int lgy = 0;	
@@ -137,7 +155,7 @@ public class ObservablePictureImpl implements ObservablePicture {
 		Coordinate largest = new Coordinate(lgx, lgy);
 		return largest;
 	}
-	
+
 	/*
 	 * Notifies the intersection of the ROI and
 	 * the union of all the changed pixels while

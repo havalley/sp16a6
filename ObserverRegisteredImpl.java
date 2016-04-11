@@ -26,5 +26,11 @@ public class ObserverRegisteredImpl implements ObserverRegistered {
 	public Region[] getRegions() {
 		return regions.toArray(new Region[regions.size()]);
 	}
+	
+	@Override
+	public ArrayList<Region> getRegionsAL() {
+		return regions;
+	}
+
 
 }
